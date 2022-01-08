@@ -1,0 +1,26 @@
+{
+  "name": "indianpoker-client",
+  "version": "1.0.0",
+  "description": "If you want to use this and the eslint config, remember to install eslint globally `sudo npm i -Dg eslint`",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/somerandomcloud/indianpoker-client.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/somerandomcloud/indianpoker-client/issues"
+  },
+  "homepage": "https://github.com/somerandomcloud/indianpoker-client#readme",
+  "dependencies": {
+    "socket.io-client": "^4.4.1",
+    "terminal-kit": "^2.3.0"
+  },
+  "devDependencies": {
+    "eslint": "^8.6.0"
+  }
+}

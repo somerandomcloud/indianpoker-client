@@ -1,3 +1,7 @@
-# project-template
+# indianpoker-client
 
-If you want to use this and the eslint config, remember to install eslint globally `sudo npm i -Dg eslint`
+A terminal client to my indian poker project
+
+## Showcase
+
+![](https://i.imgur.com/q5SwZPz.gif)
