@@ -70,6 +70,8 @@ function login() {
 							return login();
 						}
 						else if(responseData.code === 'OK') {
+							term.clear();
+							term.white('Logged in succesfully\n');
 							mainmenu();
 						}
 					});
@@ -112,6 +114,8 @@ function register() {
 							return register();
 						}
 						else if(responseData.code === 'OK') {
+							term.clear();
+							term.white('Logged in succesfully\n');
 							mainmenu();
 						}
 					});
@@ -123,7 +127,7 @@ function register() {
 
 function mainmenu() {
 	term.cyan(termwidthline);
-	term.white('Logged in!\n');
+	term.white('Main menu\n');
 
 	term.singleColumnMenu(['Create game', 'Join game', 'Quit'], function(error, response) {
 	/* Expected `response`
@@ -171,10 +175,7 @@ function createGame() {
 							return createGame();
 						}
 						else if(responseData.code === 'OK') {
-							term.clear();
-							term.cyan(termwidthline);
-							term.white('Successfully joined! Gamecode is: ');
-							term.red(responseData.gamecode);
+							gamemenu(responseData.gamecode);
 						}
 					});
 				},
@@ -183,8 +184,71 @@ function createGame() {
 	);
 }
 
-function joinGame() {
-	process.exit();
+function gamemenu(roomid) {
+	term.clear();
+	term.cyan(termwidthline);
+	term.white('Successfully joined! Gamecode is: ');
+	term.red(roomid);
+
+	term.singleColumnMenu(['Start game', 'All players', 'Leave lobby'], function(error, response) {
+
+
+		if(response.selectedIndex === 0) {return process.exit();}
+		else if(response.selectedIndex === 1) {return viewPlayers();}
+		// eslint-disable-next-line max-statements-per-line
+		else if(response.selectedIndex === 2) {term.clear(); leaveGame(); return mainmenu();}
+	});
 }
+
+function joinGame() {
+	term.clear();
+	term.cyan(termwidthline);
+	term.white('Gamecode: ');
+	term.inputField({ echoChar: '*' },
+		function(error, input) {
+			code = input;
+
+			const req = {
+				id: code,
+			};
+
+			socket.emit('joingame', req, function(responseData) {
+				if(responseData.code === 'MISSINGINFO') {
+					term.white('Missing gamecode, please retry\n');
+					return mainmenu();
+				}
+				else if(responseData.code === 'DOESNTEXIST') {
+					term.white('That game doesnt exist\n');
+					return mainmenu();
+				}
+				else if(responseData.code === 'OK') {
+					term.clear();
+					gamemenu(input);
+				}
+			});
+		},
+	);
+}
+
+function leaveGame(roomid) {
+	socket.emit('leavegame', { id: roomid }, function(responseData) {
+		//
+	});
+}
+
+// function viewPlayers(roomid) {
+// 	socket.emit('gamedata', req, function(responseData) {
+// 		if(responseData.code === 'NOPERMS') {
+// 			term.singleColumnMenu([ 'Ok'], function(error, response) {
+// 				//
+// 			});
+// 		}
+// 		else if(responseData.code === 'OK') {
+// 			term.clear();
+// 			term.white('Logged in succesfully\n');
+// 			mainmenu();
+// 		}
+// 	});
+// }
 
 lOr();
