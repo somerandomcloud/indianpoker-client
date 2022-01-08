@@ -14,7 +14,7 @@ function lOr() {
 	term.cyan(termwidthline);
 	term.white('Connected to socket.io client.\nWhat would you like to do?\n');
 
-	term.singleColumnMenu(['Login', 'Register'], function(error, response) {
+	term.singleColumnMenu(['Login', 'Register', 'Quit'], function(error, response) {
 	/* Expected `response`
     {
       selectedIndex: 0,
@@ -28,7 +28,8 @@ function lOr() {
 		term.clear();
 
 		if(response.selectedIndex === 0) return login();
-		else return register();
+		else if(response.selectedIndex === 1) return register();
+		else if(response.selectedIndex === 2) return process.exit();
 	}) ;
 }
 
@@ -144,7 +145,42 @@ function mainmenu() {
 }
 
 function createGame() {
-	process.exit();
+	term.cyan(termwidthline);
+	term.white('Enter the settings you want\nAmount assigned to each chip (Ex: 100): ');
+
+	let chips;
+	let fee;
+
+	term.inputField([],
+		function(error, input) {
+			chips = input;
+			term.white('\nChips removed each round for fees (Ex: 1): ');
+			term.inputField([],
+				function(error, input) {
+					fee = input;
+
+					const req = {
+						chips: chips,
+						fee: fee,
+					};
+
+					socket.emit('creategame', req, function(responseData) {
+						if(responseData.code === 'MISSINGINFO') {
+							term.white('Missing some info, please retry\n');
+							term.clear();
+							return createGame();
+						}
+						else if(responseData.code === 'OK') {
+							term.clear();
+							term.cyan(termwidthline);
+							term.white('Successfully joined! Gamecode is: ');
+							term.red(responseData.gamecode);
+						}
+					});
+				},
+			);
+		},
+	);
 }
 
 function joinGame() {
@@ -152,8 +188,3 @@ function joinGame() {
 }
 
 lOr();
-
-socket.on('update', (...args) => {
-	console.log('update event triggered');
-	console.log(args);
-});
