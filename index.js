@@ -1,7 +1,10 @@
+/* eslint-disable max-statements-per-line */
 const term = require('terminal-kit').terminal;
 const { io } = require('socket.io-client');
-const socket = io('ws://localhost:3000');
 const fs = require('fs');
+const nconf = require('nconf');
+
+const configfolder = process.env.APPDATA || (process.platform == 'darwin' ? process.env.HOME + '/Library/Preferences' : process.env.HOME + '/.local/share');
 
 term.clear();
 
@@ -11,20 +14,33 @@ for (let i = 0; i < term.width; i++) {
 	termwidthline += '━';
 }
 
-// eslint-disable-next-line no-inline-comments
-function start() { // WIP
-	if(!fs.existsSync(`${__dirname}/./data/config.json`)) {
+let socket;
+
+function start() {
+	nconf.file({ file: `${configfolder}/./.indianpokerclient.json` });
+
+	nconf.defaults({
+		server: 'ws://localhost:3000',
+		savelogin: true,
+	});
+
+	nconf.save();
+
+	socket = io(nconf.get('server'));
+
+	term.cyan(termwidthline);
+	term.white('You should visit Settings before logging in or registering, to make sure that the socket.io url is correct\n\n');
+
+	term.singleColumnMenu(['Ok'], function(error, response) {
 		term.clear();
-		term.cyan(termwidthline);
-		term.white('You have not set a socket.io server to join. Please type the address you want to connect to now\n');
-	}
+		lOr();
+	});
 }
 
 function lOr() {
 	term.cyan(termwidthline);
-	term.white('Connected to socket.io client.\nWhat would you like to do?\n');
 
-	term.singleColumnMenu(['Login', 'Register', 'Quit'], function(error, response) {
+	term.singleColumnMenu(['Login', 'Register', 'Settings', 'Quit'], function(error, response) {
 	/* Expected `response`
     {
       selectedIndex: 0,
@@ -39,8 +55,101 @@ function lOr() {
 
 		if(response.selectedIndex === 0) return login();
 		else if(response.selectedIndex === 1) return register();
-		else if(response.selectedIndex === 2) return process.exit();
-	}) ;
+		else if(response.selectedIndex === 2) return lOrconfig();
+		else if(response.selectedIndex === 3) return process.exit();
+	});
+}
+
+function lOrconfig() {
+	term.cyan(termwidthline);
+	term.singleColumnMenu(['socket.io server', 'Autologin', 'Back'], function(error, response) {
+		term.clear();
+		term.cyan(termwidthline);
+
+		if(response.selectedIndex === 0) {
+			term.white('You should be given a socket.io url by the people hosting the IndianPoker server.\n');
+			term.white('Type in the socket.io url (Ex: ws://localhost:3000): ');
+
+			term.inputField([],
+				function(error, input) {
+					nconf.set('server', input);
+					nconf.save();
+					term.clear();
+					term.white('Saved!\n');
+					socket.disconnect();
+					socket = io(input);
+					lOrconfig();
+				});
+		}
+		else if(response.selectedIndex === 1) {
+			term.white('Do you want to automatically log in next time you visit? (y/n)\n');
+
+			term.yesOrNo({ yes: [ 'y', 'ENTER' ], no: [ 'n' ] }, function(error, result) {
+
+				if (result) {
+					nconf.set('autologin', true);
+					nconf.save();
+					term.clear();
+					term.white('Saved!\n');
+					lOrconfig();
+				}
+				else {
+					nconf.set('autologin', false);
+					nconf.save();
+					term.clear();
+					term.white('Saved!\n');
+					lOrconfig();
+				}
+			});
+		}
+		else if(response.selectedIndex === 2) {term.clear(); return lOr();}
+	});
+}
+
+function mainconfig() {
+	term.cyan(termwidthline);
+	term.singleColumnMenu(['socket.io server', 'Autologin', 'Back'], function(error, response) {
+		term.clear();
+		term.cyan(termwidthline);
+
+		if(response.selectedIndex === 0) {
+			term.white('You should be given a socket.io url by the people hosting the IndianPoker server.\n');
+			term.white('Type in the socket.io url (Ex: ws://localhost:3000): ');
+
+			term.inputField([],
+				function(error, input) {
+					nconf.set('server', input);
+					nconf.save();
+					term.clear();
+					term.white('Saved!\n');
+					socket.disconnect();
+					socket = io(input);
+					mainconfig();
+				});
+		}
+		else if(response.selectedIndex === 1) {
+			term.white('Do you want to automatically log in next time you visit?(y/n)\n');
+
+			term.yesOrNo({ yes: [ 'y', 'ENTER' ], no: [ 'n' ] }, function(error, result) {
+
+				if (result) {
+					nconf.set('autologin', true);
+					nconf.save();
+					term.clear();
+					term.white('Saved!\n');
+					mainconfig();
+				}
+				else {
+					nconf.set('autologin', false);
+					nconf.save();
+					term.clear();
+					term.white('Saved!\n');
+					mainconfig();
+				}
+			});
+		}
+		else if(response.selectedIndex === 2) {term.clear(); return mainmenu();}
+	});
 }
 
 function login() {
@@ -139,7 +248,7 @@ function mainmenu() {
 	term.cyan(termwidthline);
 	term.white('Main menu\n');
 
-	term.singleColumnMenu(['Create game', 'Join game', 'Quit'], function(error, response) {
+	term.singleColumnMenu(['Create game', 'Join game', 'Settings', 'Quit'], function(error, response) {
 	/* Expected `response`
     {
       selectedIndex: 0,
@@ -154,7 +263,8 @@ function mainmenu() {
 
 		if(response.selectedIndex === 0) return createGame();
 		else if(response.selectedIndex === 1) return joinGame();
-		else if(response.selectedIndex === 2) return process.exit();
+		else if(response.selectedIndex === 2) return mainconfig();
+		else if(response.selectedIndex === 3) return process.exit();
 	}) ;
 }
 
@@ -281,4 +391,4 @@ function viewPlayers(roomid) {
 	});
 }
 
-lOr();
+start();
