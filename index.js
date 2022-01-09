@@ -1,6 +1,7 @@
 const term = require('terminal-kit').terminal;
 const { io } = require('socket.io-client');
 const socket = io('ws://localhost:3000');
+const fs = require('fs');
 
 term.clear();
 
@@ -8,6 +9,15 @@ let termwidthline = '';
 
 for (let i = 0; i < term.width; i++) {
 	termwidthline += '━';
+}
+
+// eslint-disable-next-line no-inline-comments
+function start() { // WIP
+	if(!fs.existsSync(`${__dirname}/./data/config.json`)) {
+		term.clear();
+		term.cyan(termwidthline);
+		term.white('You have not set a socket.io server to join. Please type the address you want to connect to now\n');
+	}
 }
 
 function lOr() {
@@ -194,9 +204,9 @@ function gamemenu(roomid) {
 
 
 		if(response.selectedIndex === 0) {return process.exit();}
-		else if(response.selectedIndex === 1) {return viewPlayers();}
+		else if(response.selectedIndex === 1) {return viewPlayers(roomid);}
 		// eslint-disable-next-line max-statements-per-line
-		else if(response.selectedIndex === 2) {term.clear(); leaveGame(); return mainmenu();}
+		else if(response.selectedIndex === 2) {term.clear(); return leaveGame();}
 	});
 }
 
@@ -217,6 +227,11 @@ function joinGame() {
 					term.white('Missing gamecode, please retry\n');
 					return mainmenu();
 				}
+				if(responseData.code === 'MAXPL') {
+					term.clear();
+					term.white('Game is full\n');
+					return mainmenu();
+				}
 				else if(responseData.code === 'DOESNTEXIST') {
 					term.white('That game doesnt exist\n');
 					return mainmenu();
@@ -232,23 +247,38 @@ function joinGame() {
 
 function leaveGame(roomid) {
 	socket.emit('leavegame', { id: roomid }, function(responseData) {
-		//
+		term.white('Left room successfully!\n');
+		mainmenu();
 	});
 }
 
-// function viewPlayers(roomid) {
-// 	socket.emit('gamedata', req, function(responseData) {
-// 		if(responseData.code === 'NOPERMS') {
-// 			term.singleColumnMenu([ 'Ok'], function(error, response) {
-// 				//
-// 			});
-// 		}
-// 		else if(responseData.code === 'OK') {
-// 			term.clear();
-// 			term.white('Logged in succesfully\n');
-// 			mainmenu();
-// 		}
-// 	});
-// }
+function viewPlayers(roomid) {
+	const req = { id: roomid };
+
+	socket.emit('gamedata', req, function(responseData) {
+		if(responseData.code === 'OK') {
+			term.clear();
+			term.table([
+				[ 'Game ID', 'Name'],
+				[ '1', responseData.data.players[0] ],
+				[ '2', responseData.data.players[1] ],
+				[ '3', responseData.data.players[2] ],
+				[ '4', responseData.data.players[3] ],
+			], {
+				hasBorder: true,
+				contentHasMarkup: true,
+				borderChars: 'lightRounded',
+				borderAttr: { color: 'blue' },
+				textAttr: { bgColor: 'default' },
+				width: 60,
+				fit: true,
+			});
+
+			term.singleColumnMenu(['Ok'], function(error, response) {
+				gamemenu(roomid);
+			});
+		}
+	});
+}
 
 lOr();
