@@ -1,7 +1,6 @@
 /* eslint-disable max-statements-per-line */
 const term = require('terminal-kit').terminal;
 const { io } = require('socket.io-client');
-const fs = require('fs');
 const nconf = require('nconf');
 
 const configfolder = process.env.APPDATA || (process.platform == 'darwin' ? process.env.HOME + '/Library/Preferences' : process.env.HOME + '/.local/share');
@@ -368,13 +367,17 @@ function viewPlayers(roomid) {
 	socket.emit('gamedata', req, function(responseData) {
 		if(responseData.code === 'OK') {
 			term.clear();
-			term.table([
-				[ 'Game ID', 'Name'],
-				[ '1', responseData.data.players[0] ],
-				[ '2', responseData.data.players[1] ],
-				[ '3', responseData.data.players[2] ],
-				[ '4', responseData.data.players[3] ],
-			], {
+
+			const table = [['Game ID', 'Name']];
+
+			responseData.data.players.forEach(function(element, index) {
+				if(element.isOwner === true) {
+					table.push([index + 1, element.name + ' (Owner)']);
+				}
+				else {table.push([index + 1, element.name]);}
+			});
+
+			term.table(table, {
 				hasBorder: true,
 				contentHasMarkup: true,
 				borderChars: 'lightRounded',
